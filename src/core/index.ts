@@ -1,14 +1,17 @@
 export { CspParser } from './CspParser';
 export { CspGenerator } from './CspGenerator';
 export { CspSecurityEvaluator } from './CspSecurityEvaluator';
+export { CspValidator } from './CspValidator';
 export type {
   CspDirectives,
   StatePayload,
   EditorState,
   EvaluationFinding,
+  ValidationResult,
   ICspParser,
   ICspGenerator,
   ICspEvaluator,
+  ICspValidator,
   IUrlStateManager,
   IClipboardService,
   IChipColorizer,

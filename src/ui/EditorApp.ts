@@ -6,6 +6,7 @@ import type {
   ICspEvaluator,
   ICspGenerator,
   ICspParser,
+  ICspValidator,
   IUrlStateManager,
 } from '../core/types';
 import { CSP_KEYWORDS } from '../core/types';
@@ -26,7 +27,8 @@ export class EditorApp {
     private evaluator: ICspEvaluator,
     private urlState: IUrlStateManager,
     private clipboard: IClipboardService,
-    private colorizer: IChipColorizer
+    private colorizer: IChipColorizer,
+    private validator: ICspValidator
   ) {}
 
   /**
@@ -47,6 +49,9 @@ export class EditorApp {
       projectUrl: '',
       findings: [] as EvaluationFinding[],
       darkMode: false,
+      directiveWarning: '' as string,
+      valueWarnings: {} as Record<string, string>,
+      rawCspWarning: '' as string,
 
       // Alpine lifecycle
       init() {
@@ -93,8 +98,92 @@ export class EditorApp {
 
       // --- CSP Logic ---
       parseCsp() {
-        this.directives = app.parser.parse(this.rawCsp);
+        const parsed = app.parser.parse(this.rawCsp);
+        const cleanDirectives: CspDirectives = {};
+        const warnings: string[] = [];
+        
+        for (const [directive, values] of Object.entries(parsed)) {
+          // Validate directive name
+          const dirResult = app.validator.validateDirective(directive);
+          if (!dirResult.valid) {
+            warnings.push(`Directive "${directive}": ${dirResult.warning}`);
+            continue; // Skip invalid directive completely
+          }
+          if (dirResult.warning) {
+            warnings.push(`Directive "${directive}": ${dirResult.warning}`);
+          }
+          
+          // Validate and filter values
+          const validValues: string[] = [];
+          for (const value of values) {
+            const valResult = app.validator.validateValue(value, directive);
+            if (!valResult.valid) {
+              warnings.push(`Value "${value}" in ${directive}: ${valResult.warning}`);
+              // Don't add invalid value
+            } else {
+              validValues.push(value);
+              if (valResult.warning) {
+                warnings.push(`Value "${value}" in ${directive}: ${valResult.warning}`);
+              }
+            }
+          }
+          
+          // Only add directive if it has valid values or is a boolean directive
+          if (validValues.length > 0 || directive === 'upgrade-insecure-requests' || directive === 'block-all-mixed-content') {
+            cleanDirectives[directive] = validValues;
+          }
+        }
+        
+        this.directives = cleanDirectives;
+        
+        // Show consolidated warning if there were issues
+        if (warnings.length > 0) {
+          const preview = warnings.slice(0, 3).join(' • ');
+          const more = warnings.length > 3 ? ` (${warnings.length - 3} more issues)` : '';
+          this.rawCspWarning = `Found ${warnings.length} issue(s): ${preview}${more}`;
+        } else {
+          this.rawCspWarning = '';
+        }
+        
         this.updateUrl();
+      },
+
+      validateRawCsp() {
+        const raw = this.rawCsp.trim();
+        if (!raw) {
+          this.rawCspWarning = '';
+          return;
+        }
+
+        // Check for obvious non-CSP content
+        if (!/[a-z-]+/.test(raw)) {
+          this.rawCspWarning = 'This doesn\'t look like a valid CSP. Expected format: "directive-name value1 value2; another-directive value"';
+          return;
+        }
+
+        // Check if it looks like random text
+        const parts = raw.split(/[;\s]+/).filter(Boolean);
+        const validDirectivePattern = /^[a-z][a-z0-9-]*$/;
+        const hasValidDirective = parts.some(part => validDirectivePattern.test(part));
+
+        if (!hasValidDirective) {
+          this.rawCspWarning = 'No valid CSP directive found. Directives should look like: default-src, script-src, style-src, etc.';
+          return;
+        }
+
+        // Try to parse and see if we get empty result
+        try {
+          const parsed = app.parser.parse(raw);
+          if (Object.keys(parsed).length === 0) {
+            this.rawCspWarning = 'Could not parse any directives from this text. Check the format: "directive-name value1 value2"';
+            return;
+          }
+        } catch {
+          this.rawCspWarning = 'Error parsing CSP. Make sure the format is correct.';
+          return;
+        }
+
+        this.rawCspWarning = '';
       },
 
       generateCsp(): string {
@@ -106,12 +195,42 @@ export class EditorApp {
         const input = event.target as HTMLInputElement;
         let val = input.value.trim();
 
+        if (!val) {
+          input.value = '';
+          return;
+        }
+
         // Auto-quote known keywords
         if (CSP_KEYWORDS.includes(val.toLowerCase() as typeof CSP_KEYWORDS[number])) {
           val = `'${val.toLowerCase()}'`;
         }
 
-        if (val && !this.directives[directive].includes(val)) {
+        // Validate the value
+        const result = app.validator.validateValue(val, directive);
+
+        if (!result.valid) {
+          // Force Alpine reactivity by creating new object
+          const updated = { ...this.valueWarnings };
+          updated[directive] = result.warning || 'Invalid value.';
+          this.valueWarnings = updated;
+          this.clearWarning('value', directive);
+          input.value = '';
+          return;
+        }
+
+        if (result.warning) {
+          const updated = { ...this.valueWarnings };
+          updated[directive] = result.warning;
+          this.valueWarnings = updated;
+          this.clearWarning('value', directive);
+        } else {
+          // Clear any existing warning
+          const updated = { ...this.valueWarnings };
+          delete updated[directive];
+          this.valueWarnings = updated;
+        }
+
+        if (!this.directives[directive].includes(val)) {
           this.directives[directive].push(val);
           this.updateUrl();
         }
@@ -125,7 +244,26 @@ export class EditorApp {
 
       addDirective() {
         const name = this.newDirectiveName.trim().toLowerCase();
-        if (name && !this.directives[name]) {
+        if (!name) {
+          this.newDirectiveName = '';
+          return;
+        }
+
+        const result = app.validator.validateDirective(name);
+
+        if (!result.valid) {
+          this.directiveWarning = result.warning || 'Invalid directive name.';
+          this.clearWarning('directive');
+          this.newDirectiveName = '';
+          return;
+        }
+
+        if (result.warning) {
+          this.directiveWarning = result.warning;
+          this.clearWarning('directive');
+        }
+
+        if (!this.directives[name]) {
           this.directives[name] = [];
           this.updateUrl();
         }
@@ -143,7 +281,22 @@ export class EditorApp {
         this.projectName = '';
         this.projectUrl = '';
         this.findings = [];
+        this.directiveWarning = '';
+        this.valueWarnings = {};
+        this.rawCspWarning = '';
         this.updateUrl();
+      },
+
+      clearWarning(type: 'directive' | 'value', directive?: string) {
+        setTimeout(() => {
+          if (type === 'directive') {
+            this.directiveWarning = '';
+          } else if (directive) {
+            const updated = { ...this.valueWarnings };
+            delete updated[directive];
+            this.valueWarnings = updated;
+          }
+        }, 5000);
       },
 
       // --- Clipboard ---
