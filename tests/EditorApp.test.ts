@@ -7,10 +7,12 @@ import type {
   IUrlStateManager,
   IClipboardService,
   IChipColorizer,
+  ICspValidator,
   CspDirectives,
   EditorState,
   EvaluationFinding,
   ChipColor,
+  ValidationResult,
 } from '../src/core/types';
 
 // --- Mock implementations ---
@@ -68,6 +70,13 @@ function createMockColorizer(): IChipColorizer {
   };
 }
 
+function createMockValidator(): ICspValidator {
+  return {
+    validateDirective: vi.fn((): ValidationResult => ({ valid: true })),
+    validateValue: vi.fn((): ValidationResult => ({ valid: true })),
+  };
+}
+
 describe('EditorApp', () => {
   let mockParser: ICspParser;
   let mockGenerator: ICspGenerator;
@@ -75,6 +84,7 @@ describe('EditorApp', () => {
   let mockUrlState: IUrlStateManager;
   let mockClipboard: IClipboardService;
   let mockColorizer: IChipColorizer;
+  let mockValidator: ICspValidator;
   let app: EditorApp;
 
   beforeEach(() => {
@@ -84,7 +94,8 @@ describe('EditorApp', () => {
     mockUrlState = createMockUrlState();
     mockClipboard = createMockClipboard();
     mockColorizer = createMockColorizer();
-    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer);
+    mockValidator = createMockValidator();
+    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer, mockValidator);
 
     // Mock matchMedia for dark mode tests
     Object.defineProperty(window, 'matchMedia', {

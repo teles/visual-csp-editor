@@ -1,5 +1,5 @@
 import Alpine from 'alpinejs';
-import { CspParser, CspGenerator, CspSecurityEvaluator } from './core';
+import { CspParser, CspGenerator, CspSecurityEvaluator, CspValidator } from './core';
 import { UrlStateManager, ClipboardService } from './services';
 import { EditorApp, ChipColorizer } from './ui';
 
@@ -12,6 +12,7 @@ const evaluator = new CspSecurityEvaluator();
 const urlState = new UrlStateManager();
 const clipboard = new ClipboardService();
 const colorizer = new ChipColorizer();
+const validator = new CspValidator();
 
 const editorApp = new EditorApp(
   parser,
@@ -19,7 +20,8 @@ const editorApp = new EditorApp(
   evaluator,
   urlState,
   clipboard,
-  colorizer
+  colorizer,
+  validator
 );
 
 // Register Alpine.js component

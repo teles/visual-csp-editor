@@ -81,6 +81,25 @@ export interface IClipboardService {
 }
 
 /**
+ * Result of a CSP validation check.
+ */
+export interface ValidationResult {
+  /** Whether the value meets basic structural requirements. */
+  valid: boolean;
+  /** Optional warning message (value is still accepted). */
+  warning?: string;
+}
+
+/**
+ * Contract for validating CSP directive names and values.
+ * Single Responsibility: only handles validation logic.
+ */
+export interface ICspValidator {
+  validateDirective(name: string): ValidationResult;
+  validateValue(value: string, directive: string): ValidationResult;
+}
+
+/**
  * Contract for chip color classification.
  * Single Responsibility: determines visual classification of CSP values.
  */
@@ -93,7 +112,7 @@ export interface IChipColorizer {
  */
 export interface ChipColor {
   classes: string;
-  category: 'keyword' | 'scheme' | 'domain';
+  category: 'keyword' | 'nonce' | 'hash' | 'scheme' | 'domain' | 'wildcard';
 }
 
 /**
