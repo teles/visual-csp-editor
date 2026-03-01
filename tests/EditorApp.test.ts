@@ -9,6 +9,7 @@ import type {
   IChipColorizer,
   ICspValidator,
   ICspTemplateService,
+  ICspReportExporter,
   CspDirectives,
   CspTemplate,
   EditorState,
@@ -98,6 +99,15 @@ function createMockTemplateService(): ICspTemplateService {
   };
 }
 
+function createMockReportExporter(): ICspReportExporter {
+  return {
+    exportAsMarkdown: vi.fn(() => '# CSP Report'),
+    exportAsJson: vi.fn(() => '{}'),
+    downloadMarkdown: vi.fn(),
+    downloadJson: vi.fn(),
+  };
+}
+
 describe('EditorApp', () => {
   let mockParser: ICspParser;
   let mockGenerator: ICspGenerator;
@@ -107,6 +117,7 @@ describe('EditorApp', () => {
   let mockColorizer: IChipColorizer;
   let mockValidator: ICspValidator;
   let mockTemplateService: ICspTemplateService;
+  let mockReportExporter: ICspReportExporter;
   let app: EditorApp;
 
   beforeEach(() => {
@@ -118,7 +129,8 @@ describe('EditorApp', () => {
     mockColorizer = createMockColorizer();
     mockValidator = createMockValidator();
     mockTemplateService = createMockTemplateService();
-    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer, mockValidator, mockTemplateService);
+    mockReportExporter = createMockReportExporter();
+    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer, mockValidator, mockTemplateService, mockReportExporter);
 
     // Mock matchMedia for dark mode tests
     Object.defineProperty(window, 'matchMedia', {

@@ -156,6 +156,26 @@
                 </svg>
                 <span x-text="shareText"></span>
               </button>
+              <div class="border-t border-slate-200 dark:border-slate-700 my-3"></div>
+              <div class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Export Report</div>
+              <button 
+                @click="exportAsMarkdown()"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg group"
+              >
+                <svg class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span>Export as Markdown</span>
+              </button>
+              <button 
+                @click="exportAsJson()"
+                class="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg group mt-2"
+              >
+                <svg class="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                <span>Export as JSON</span>
+              </button>
             </div>
             <p class="mt-4 text-[10px] text-slate-400 leading-relaxed italic">
               * Share URL utilizes Pako compression to handle long policy strings efficiently.

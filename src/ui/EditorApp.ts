@@ -6,9 +6,11 @@ import type {
   ICspEvaluator,
   ICspGenerator,
   ICspParser,
+  ICspReportExporter,
   ICspTemplateService,
   ICspValidator,
   IUrlStateManager,
+  ReportData,
 } from '../core/types';
 import { CSP_KEYWORDS } from '../core/types';
 
@@ -30,7 +32,8 @@ export class EditorApp {
     private clipboard: IClipboardService,
     private colorizer: IChipColorizer,
     private validator: ICspValidator,
-    private templateService: ICspTemplateService
+    private templateService: ICspTemplateService,
+    private reportExporter: ICspReportExporter
   ) {}
 
   /**
@@ -383,6 +386,28 @@ export class EditorApp {
           default:
             return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
         }
+      },
+
+      // --- Report Export ---
+      exportAsMarkdown() {
+        const reportData = this.buildReportData();
+        app.reportExporter.downloadMarkdown(reportData);
+      },
+
+      exportAsJson() {
+        const reportData = this.buildReportData();
+        app.reportExporter.downloadJson(reportData);
+      },
+
+      buildReportData(): ReportData {
+        return {
+          projectName: this.projectName,
+          projectUrl: this.projectUrl,
+          generatedAt: new Date().toISOString(),
+          directives: this.directives,
+          findings: this.findings,
+          rawCsp: this.generateCsp(),
+        };
       },
     };
   }

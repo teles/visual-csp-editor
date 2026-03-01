@@ -15,6 +15,8 @@ export type {
   IUrlStateManager,
   IClipboardService,
   IChipColorizer,
+  ICspReportExporter,
   ChipColor,
+  ReportData,
 } from './types';
 export { CSP_KEYWORDS, CSP_DIRECTIVE_NAMES } from './types';

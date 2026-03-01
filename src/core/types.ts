@@ -100,6 +100,29 @@ export interface ICspValidator {
 }
 
 /**
+ * Data structure for CSP report exports.
+ */
+export interface ReportData {
+  projectName: string;
+  projectUrl: string;
+  generatedAt: string;
+  directives: CspDirectives;
+  findings: EvaluationFinding[];
+  rawCsp: string;
+}
+
+/**
+ * Contract for exporting CSP reports as Markdown or JSON.
+ * Single Responsibility: handles report formatting and file downloads.
+ */
+export interface ICspReportExporter {
+  exportAsMarkdown(data: ReportData): string;
+  exportAsJson(data: ReportData): string;
+  downloadMarkdown(data: ReportData): void;
+  downloadJson(data: ReportData): void;
+}
+
+/**
  * Template definition for CSP policies
  */
 export interface CspTemplate {
