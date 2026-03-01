@@ -9,12 +9,14 @@ import type {
   IChipColorizer,
   ICspValidator,
   ICspTemplateService,
+  ICspFetcher,
   CspDirectives,
   CspTemplate,
   EditorState,
   EvaluationFinding,
   ChipColor,
   ValidationResult,
+  CspFetchResult,
 } from '../src/core/types';
 
 // --- Mock implementations ---
@@ -98,6 +100,15 @@ function createMockTemplateService(): ICspTemplateService {
   };
 }
 
+function createMockFetcher(): ICspFetcher {
+  return {
+    fetchCsp: vi.fn(async (): Promise<CspFetchResult> => ({
+      success: true,
+      csp: "default-src 'self'",
+    })),
+  };
+}
+
 describe('EditorApp', () => {
   let mockParser: ICspParser;
   let mockGenerator: ICspGenerator;
@@ -107,6 +118,7 @@ describe('EditorApp', () => {
   let mockColorizer: IChipColorizer;
   let mockValidator: ICspValidator;
   let mockTemplateService: ICspTemplateService;
+  let mockFetcher: ICspFetcher;
   let app: EditorApp;
 
   beforeEach(() => {
@@ -118,7 +130,8 @@ describe('EditorApp', () => {
     mockColorizer = createMockColorizer();
     mockValidator = createMockValidator();
     mockTemplateService = createMockTemplateService();
-    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer, mockValidator, mockTemplateService);
+    mockFetcher = createMockFetcher();
+    app = new EditorApp(mockParser, mockGenerator, mockEvaluator, mockUrlState, mockClipboard, mockColorizer, mockValidator, mockTemplateService, mockFetcher);
 
     // Mock matchMedia for dark mode tests
     Object.defineProperty(window, 'matchMedia', {
@@ -448,5 +461,88 @@ describe('EditorApp', () => {
     const color = data.getCspLengthColor();
     
     expect(color).toBe('text-red-400');
+  });
+
+  it('should initialize with empty fetch URL state', () => {
+    const data = app.createAlpineData();
+    
+    expect(data.fetchUrl).toBe('');
+    expect(data.isFetching).toBe(false);
+    expect(data.fetchError).toBe('');
+  });
+
+  it('should successfully import CSP from URL', async () => {
+    const data = app.createAlpineData();
+    data.fetchUrl = 'https://example.com';
+    
+    vi.mocked(mockFetcher.fetchCsp).mockResolvedValue({
+      success: true,
+      csp: "default-src 'self'; script-src https://cdn.com",
+    });
+    
+    await data.importFromUrl();
+    
+    expect(mockFetcher.fetchCsp).toHaveBeenCalledWith('https://example.com');
+    expect(data.rawCsp).toBe("default-src 'self'; script-src https://cdn.com");
+    expect(data.fetchUrl).toBe('');
+    expect(data.fetchError).toBe('');
+    expect(data.isFetching).toBe(false);
+  });
+
+  it('should show error when import fails', async () => {
+    const data = app.createAlpineData();
+    data.fetchUrl = 'https://example.com';
+    
+    vi.mocked(mockFetcher.fetchCsp).mockResolvedValue({
+      success: false,
+      error: 'No CSP header found',
+    });
+    
+    await data.importFromUrl();
+    
+    expect(data.fetchError).toBe('No CSP header found');
+    expect(data.rawCsp).toBe('');
+    expect(data.isFetching).toBe(false);
+  });
+
+  it('should show error when URL is empty', async () => {
+    const data = app.createAlpineData();
+    data.fetchUrl = '';
+    
+    await data.importFromUrl();
+    
+    expect(data.fetchError).toBe('Please enter a URL');
+    expect(mockFetcher.fetchCsp).not.toHaveBeenCalled();
+  });
+
+  it('should set isFetching during fetch operation', async () => {
+    const data = app.createAlpineData();
+    data.fetchUrl = 'https://example.com';
+    
+    let isFetchingDuringCall = false;
+    vi.mocked(mockFetcher.fetchCsp).mockImplementation(async () => {
+      isFetchingDuringCall = data.isFetching;
+      return { success: true, csp: "default-src 'self'" };
+    });
+    
+    await data.importFromUrl();
+    
+    expect(isFetchingDuringCall).toBe(true);
+    expect(data.isFetching).toBe(false);
+  });
+
+  it('should parse CSP after successful import', async () => {
+    const data = app.createAlpineData();
+    data.fetchUrl = 'https://example.com';
+    
+    vi.mocked(mockFetcher.fetchCsp).mockResolvedValue({
+      success: true,
+      csp: "default-src 'self'",
+    });
+    
+    await data.importFromUrl();
+    
+    expect(mockParser.parse).toHaveBeenCalledWith("default-src 'self'");
+    expect(Object.keys(data.directives).length).toBeGreaterThan(0);
   });
 });

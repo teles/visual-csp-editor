@@ -16,5 +16,7 @@ export type {
   IClipboardService,
   IChipColorizer,
   ChipColor,
+  ICspFetcher,
+  CspFetchResult,
 } from './types';
 export { CSP_KEYWORDS, CSP_DIRECTIVE_NAMES } from './types';

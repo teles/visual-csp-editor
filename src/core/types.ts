@@ -81,6 +81,26 @@ export interface IClipboardService {
 }
 
 /**
+ * Result of fetching CSP from a URL.
+ */
+export interface CspFetchResult {
+  /** Whether the fetch was successful. */
+  success: boolean;
+  /** The CSP header value if found. */
+  csp?: string;
+  /** Error message if fetch failed. */
+  error?: string;
+}
+
+/**
+ * Contract for fetching CSP from external URLs.
+ * Single Responsibility: handles remote CSP retrieval.
+ */
+export interface ICspFetcher {
+  fetchCsp(url: string): Promise<CspFetchResult>;
+}
+
+/**
  * Result of a CSP validation check.
  */
 export interface ValidationResult {

@@ -1,7 +1,7 @@
 import Alpine from 'alpinejs';
 import { CspParser, CspGenerator, CspSecurityEvaluator, CspValidator } from './core';
 import { CspTemplateService } from './core/CspTemplates';
-import { UrlStateManager, ClipboardService } from './services';
+import { UrlStateManager, ClipboardService, CspFetcherService } from './services';
 import { EditorApp, ChipColorizer } from './ui';
 
 import './style.css';
@@ -15,6 +15,7 @@ const clipboard = new ClipboardService();
 const colorizer = new ChipColorizer();
 const validator = new CspValidator();
 const templateService = new CspTemplateService();
+const fetcher = new CspFetcherService();
 
 const editorApp = new EditorApp(
   parser,
@@ -24,7 +25,8 @@ const editorApp = new EditorApp(
   clipboard,
   colorizer,
   validator,
-  templateService
+  templateService,
+  fetcher
 );
 
 // Register Alpine.js component

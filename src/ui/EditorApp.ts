@@ -9,6 +9,7 @@ import type {
   ICspTemplateService,
   ICspValidator,
   IUrlStateManager,
+  ICspFetcher,
 } from '../core/types';
 import { CSP_KEYWORDS } from '../core/types';
 
@@ -30,7 +31,8 @@ export class EditorApp {
     private clipboard: IClipboardService,
     private colorizer: IChipColorizer,
     private validator: ICspValidator,
-    private templateService: ICspTemplateService
+    private templateService: ICspTemplateService,
+    private fetcher: ICspFetcher
   ) {}
 
   /**
@@ -57,6 +59,9 @@ export class EditorApp {
       collapsedDirectives: {} as Record<string, boolean>,
       templates: app.templateService.getTemplates(),
       showTemplates: false,
+      fetchUrl: '',
+      isFetching: false,
+      fetchError: '',
 
       // Alpine lifecycle
       init() {
@@ -324,6 +329,43 @@ export class EditorApp {
           this.showTemplates = false;
           this.updateUrl();
         }
+      },
+
+      async importFromUrl() {
+        const url = this.fetchUrl.trim();
+        if (!url) {
+          this.fetchError = 'Please enter a URL';
+          this.clearFetchError();
+          return;
+        }
+
+        this.isFetching = true;
+        this.fetchError = '';
+
+        try {
+          const result = await app.fetcher.fetchCsp(url);
+          
+          if (result.success && result.csp) {
+            this.rawCsp = result.csp;
+            this.parseCsp();
+            this.fetchUrl = '';
+            this.fetchError = '';
+          } else {
+            this.fetchError = result.error || 'Failed to fetch CSP';
+            this.clearFetchError();
+          }
+        } catch (error) {
+          this.fetchError = error instanceof Error ? error.message : 'Unknown error';
+          this.clearFetchError();
+        } finally {
+          this.isFetching = false;
+        }
+      },
+
+      clearFetchError() {
+        setTimeout(() => {
+          this.fetchError = '';
+        }, 5000);
       },
 
       clearWarning(type: 'directive' | 'value', directive?: string) {
