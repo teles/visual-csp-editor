@@ -228,10 +228,10 @@
                 <template x-for="(values, directive) in directives" :key="directive">
                   <div class="directive-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm relative group">
                     <div class="flex justify-between items-start mb-3">
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2.5">
                         <h4 class="mono font-bold text-indigo-600 dark:text-indigo-400 text-sm" x-text="directive"></h4>
                         <span 
-                          class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                          class="inline-flex items-center justify-center min-w-[24px] h-5 px-2 text-[11px] font-bold rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
                           x-text="values.length"
                           :title="`${values.length} value${values.length !== 1 ? 's' : ''}`"
                         ></span>
