@@ -103,7 +103,7 @@
                   id="project-name"
                   type="text" 
                   placeholder="e.g., My App"
-                  class="w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder-slate-400 dark:placeholder-slate-500"
+                  class="w-full px-3 py-2 rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
               <div>
@@ -114,7 +114,7 @@
                   id="target-url"
                   type="url" 
                   placeholder="https://example.com"
-                  class="w-full rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder-slate-400 dark:placeholder-slate-500"
+                  class="w-full px-3 py-2 rounded-md border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm placeholder-slate-400 dark:placeholder-slate-500"
                 />
               </div>
             </div>
@@ -182,7 +182,7 @@
                 @input="validateRawCsp()"
                 rows="4"
                 placeholder="Paste your CSP here&#10;Example: default-src 'self'; script-src 'self' https://cdn.example.com; style-src 'self' 'unsafe-inline'"
-                class="block w-full mono text-sm rounded-lg border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
+                class="block w-full px-3 py-3 mono text-sm rounded-lg border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-indigo-500 focus:border-indigo-500 placeholder-slate-400 dark:placeholder-slate-500"
                 :class="rawCspWarning ? 'border-amber-500 dark:border-amber-500' : ''"
               ></textarea>
               <div
@@ -228,8 +228,13 @@
                 <template x-for="(values, directive) in directives" :key="directive">
                   <div class="directive-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm relative group">
                     <div class="flex justify-between items-start mb-3">
-                      <div>
+                      <div class="flex items-center gap-2">
                         <h4 class="mono font-bold text-indigo-600 dark:text-indigo-400 text-sm" x-text="directive"></h4>
+                        <span 
+                          class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                          x-text="values.length"
+                          :title="`${values.length} value${values.length !== 1 ? 's' : ''}`"
+                        ></span>
                       </div>
                       <div class="action-buttons flex gap-1">
                         <button 
@@ -269,7 +274,7 @@
                       type="text"
                       @keydown.enter="addValue(directive, $event)"
                       placeholder="Add value (e.g., 'self' or google.com) and press Enter..."
-                      class="w-full text-sm p-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none mono placeholder-slate-400 dark:placeholder-slate-500"
+                      class="w-full text-sm px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none mono placeholder-slate-400 dark:placeholder-slate-500"
                       :class="valueWarnings[directive] ? 'border-amber-500 dark:border-amber-500' : ''"
                     />
                     <div
@@ -292,7 +297,7 @@
                   type="text"
                   list="csp-directives"
                   placeholder="New directive (e.g., img-src)"
-                  class="flex-1 p-2 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none mono text-sm placeholder-slate-400 dark:placeholder-slate-500"
+                  class="flex-1 px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none mono text-sm placeholder-slate-400 dark:placeholder-slate-500"
                   :class="directiveWarning ? 'border-amber-500 dark:border-amber-500' : ''"
                 />
                 <datalist id="csp-directives">
