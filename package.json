@@ -1,5 +1,5 @@
 {
-  "name": "visual-csp-editor",
+  "name": "visual-csp",
   "version": "1.0.0",
   "description": "A visual editor for Content Security Policy headers with security evaluation",
   "type": "module",
@@ -15,15 +15,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/teles/visual-csp-editor.git"
+    "url": "git+https://github.com/teles/visual-csp.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/teles/visual-csp-editor/issues"
+    "url": "https://github.com/teles/visual-csp/issues"
   },
-  "homepage": "https://github.com/teles/visual-csp-editor#readme",
+  "homepage": "https://github.com/teles/visual-csp#readme",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@tailwindcss/vite": "^4.2.1",
