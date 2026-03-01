@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visual CSP Editor</title>
+  <meta name="description" content="A visual editor for Content Security Policy headers. Parse, edit, evaluate and share CSP configurations." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>" />
+  <!-- Prevent flash of unstyled theme -->
+  <script>
+    try {
+      const stored = localStorage.getItem('darkMode');
+      const dark = stored !== null ? stored === 'true' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    } catch(e) {}
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950 min-h-screen py-10 px-4 transition-colors duration-200">
+
+  <div class="max-w-5xl mx-auto" x-data="cspEditor">
+
+    <!-- Header -->
+    <header class="mb-8 flex justify-between items-start">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">🛡️ Visual CSP Editor</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">
+          Your CSP is automatically saved to the URL. Share the link to send your current configuration!
+        </p>
+      </div>
+      <button
+        @click="toggleDarkMode()"
+        class="p-2 rounded-lg bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+        :title="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      >
+        <svg x-show="!darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+        <svg x-show="darkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      </button>
+    </header>
+
+    <!-- Paste CSP Section (shown when no directives) -->
+    <section
+      class="bg-white dark:bg-gray-900 rounded-lg shadow p-6 mb-8 border border-gray-200 dark:border-gray-700"
+      x-show="Object.keys(directives).length === 0"
+      x-transition
+    >
+      <h2 class="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Paste your current CSP to get started</h2>
+      <textarea
+        x-model="rawCsp"
+        class="w-full h-32 p-3 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-sm placeholder-gray-400 dark:placeholder-gray-500"
+        placeholder="E.g.: default-src 'self'; script-src 'self' https://google.com;"
+      ></textarea>
+      <div class="mt-4 flex justify-end">
+        <button
+          @click="parseCsp()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition"
+        >
+          Parse and Edit
+        </button>
+      </div>
+    </section>
+
+    <!-- Editor (shown when directives exist) -->
+    <template x-if="Object.keys(directives).length > 0">
+      <div class="space-y-6">
+
+        <!-- Project Details -->
+        <section class="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            Project Details
+            <span class="text-sm font-normal text-gray-400 dark:text-gray-500">(Optional)</span>
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name</label>
+              <input
+                type="text"
+                x-model="projectName"
+                @input="updateUrl()"
+                placeholder="e.g., My App"
+                class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm placeholder-gray-400 dark:placeholder-gray-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Target URL</label>
+              <input
+                type="url"
+                x-model="projectUrl"
+                @input="updateUrl()"
+                placeholder="e.g., https://example.com"
+                class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-mono placeholder-gray-400 dark:placeholder-gray-500"
+              />
+            </div>
+          </div>
+        </section>
+
+        <!-- Edit Directives -->
+        <section class="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+              Edit Directives
+              <span
+                class="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300"
+                x-text="Object.keys(directives).length"
+              ></span>
+            </h2>
+            <button
+              @click="resetEditor()"
+              class="text-sm text-red-500 dark:text-red-400 hover:underline"
+            >
+              Start over
+            </button>
+          </div>
+
+          <div class="space-y-6">
+            <template x-for="(values, directive) in directives" :key="directive">
+              <div class="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800/50">
+                <div class="flex justify-between items-center mb-3">
+                  <h3 class="font-bold text-gray-700 dark:text-gray-200 font-mono" x-text="directive"></h3>
+                  <button
+                    @click="removeDirective(directive)"
+                    class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium"
+                    title="Remove Directive"
+                  >
+                    &times; Remove
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-3">
+                  <template x-for="(val, index) in values" :key="index">
+                    <span
+                      class="inline-flex items-center text-sm px-3 py-1 rounded-full font-mono border"
+                      :class="getChipColor(val)"
+                    >
+                      <span x-text="val"></span>
+                      <button
+                        @click="removeValue(directive, index)"
+                        class="ml-2 hover:opacity-75 focus:outline-none"
+                      >
+                        &times;
+                      </button>
+                    </span>
+                  </template>
+                  <span
+                    x-show="values.length === 0"
+                    class="text-gray-400 dark:text-gray-500 text-sm italic"
+                  >
+                    No values
+                  </span>
+                </div>
+
+                <input
+                  type="text"
+                  @keydown.enter="addValue(directive, $event)"
+                  placeholder="Add domain/value (e.g., 'self' or google.com) and press Enter..."
+                  class="w-full text-sm p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono placeholder-gray-400 dark:placeholder-gray-500"
+                />
+              </div>
+            </template>
+          </div>
+
+          <!-- Add directive -->
+          <div class="mt-6 flex gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <datalist id="csp-directives">
+              <option value="default-src"></option>
+              <option value="script-src"></option>
+              <option value="script-src-elem"></option>
+              <option value="script-src-attr"></option>
+              <option value="style-src"></option>
+              <option value="style-src-elem"></option>
+              <option value="style-src-attr"></option>
+              <option value="connect-src"></option>
+              <option value="img-src"></option>
+              <option value="font-src"></option>
+              <option value="media-src"></option>
+              <option value="object-src"></option>
+              <option value="frame-src"></option>
+              <option value="frame-ancestors"></option>
+              <option value="child-src"></option>
+              <option value="worker-src"></option>
+              <option value="base-uri"></option>
+              <option value="form-action"></option>
+              <option value="navigate-to"></option>
+              <option value="report-uri"></option>
+              <option value="report-to"></option>
+              <option value="manifest-src"></option>
+              <option value="upgrade-insecure-requests"></option>
+              <option value="block-all-mixed-content"></option>
+              <option value="sandbox"></option>
+            </datalist>
+
+            <input
+              x-model="newDirectiveName"
+              @keydown.enter="addDirective()"
+              type="text"
+              list="csp-directives"
+              placeholder="New directive (e.g., img-src)"
+              class="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono text-sm placeholder-gray-400 dark:placeholder-gray-500"
+            />
+            <button
+              @click="addDirective()"
+              class="bg-gray-800 dark:bg-gray-600 hover:bg-gray-900 dark:hover:bg-gray-500 text-white px-4 py-2 rounded font-medium transition"
+            >
+              + Add
+            </button>
+          </div>
+        </section>
+
+        <!-- Security Findings -->
+        <section
+          x-show="findings.length > 0"
+          x-transition
+          class="bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700"
+        >
+          <h2 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
+            🔍 Security Findings
+            <span
+              class="text-sm font-normal text-gray-400 dark:text-gray-500"
+              x-text="'(' + findings.length + ' issue' + (findings.length !== 1 ? 's' : '') + ')'"
+            ></span>
+          </h2>
+          <div class="space-y-2">
+            <template x-for="(finding, index) in findings" :key="index">
+              <div
+                class="flex items-start gap-3 p-3 rounded border"
+                :class="getSeverityColor(finding)"
+              >
+                <span
+                  class="text-xs font-bold px-2 py-0.5 rounded whitespace-nowrap"
+                  x-text="finding.severityLabel"
+                ></span>
+                <div class="text-sm">
+                  <span class="font-mono font-bold" x-text="finding.directive"></span>:
+                  <span x-text="finding.description"></span>
+                  <span
+                    x-show="finding.value"
+                    class="font-mono text-xs ml-1 opacity-70"
+                    x-text="'(' + finding.value + ')'"
+                  ></span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </section>
+
+        <!-- Generated CSP Output -->
+        <section class="bg-gray-900 dark:bg-gray-950 rounded-lg shadow border border-gray-700 dark:border-gray-600 overflow-hidden">
+          <div
+            x-show="projectName || projectUrl"
+            class="bg-gray-800 dark:bg-gray-900 border-b border-gray-700 dark:border-gray-600 p-4"
+          >
+            <h3
+              class="text-green-400 font-bold text-lg"
+              x-text="projectName || 'Unnamed Project'"
+            ></h3>
+            <a
+              x-show="projectUrl"
+              :href="projectUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-gray-400 text-sm hover:text-white transition flex items-center mt-1"
+              x-text="projectUrl"
+            ></a>
+          </div>
+
+          <div class="p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <h2 class="text-lg font-semibold text-white">Generated CSP</h2>
+              <div class="flex gap-3">
+                <button
+                  @click="copyShareLink()"
+                  class="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-1.5 px-4 rounded transition flex items-center gap-2"
+                  x-text="shareText"
+                ></button>
+                <button
+                  @click="copyToClipboard()"
+                  class="bg-green-500 hover:bg-green-600 text-white text-sm font-medium py-1.5 px-4 rounded transition flex items-center gap-2"
+                  x-text="copyText"
+                ></button>
+              </div>
+            </div>
+
+            <textarea
+              readonly
+              :value="generateCsp()"
+              class="w-full h-48 p-4 bg-gray-800 dark:bg-gray-900 text-gray-200 border border-gray-700 dark:border-gray-600 rounded focus:outline-none font-mono text-sm leading-relaxed"
+            ></textarea>
+          </div>
+        </section>
+
+      </div>
+    </template>
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-gray-400 dark:text-gray-500 text-sm">
+      <p>
+        Built with
+        <a href="https://alpinejs.dev" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Alpine.js</a>,
+        <a href="https://tailwindcss.com" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Tailwind CSS</a>,
+        and Google's
+        <a href="https://github.com/nicosResearchAndDevelopment/nicosResearchAndDevelopment.github.io" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">CSP Evaluator</a>.
+        <span class="mx-1">·</span>
+        <a href="https://github.com/teles/visual-csp-editor" target="_blank" rel="noopener" class="underline hover:text-gray-600 dark:hover:text-gray-300">Source on GitHub</a>
+      </p>
+    </footer>
+
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "name": "visual-csp-editor",
+  "version": "1.0.0",
+  "description": "A visual editor for Content Security Policy headers with security evaluation",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "tsc --noEmit && eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teles/visual-csp-editor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/teles/visual-csp-editor/issues"
+  },
+  "homepage": "https://github.com/teles/visual-csp-editor#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/alpinejs": "^3.13.11",
+    "@types/pako": "^2.0.4",
+    "@vitest/coverage-v8": "^4.0.18",
+    "alpinejs": "^3.15.8",
+    "eslint": "^10.0.2",
+    "globals": "^17.3.0",
+    "jsdom": "^28.1.0",
+    "pako": "^2.1.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "csp_evaluator": "^1.1.5"
+  }
+}
