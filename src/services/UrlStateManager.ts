@@ -4,19 +4,23 @@ import type { EditorState, IUrlStateManager, StatePayload } from '../core/types'
 /**
  * Manages editor state persistence via URL hash using compression.
  * Uses pako (zlib) for compression and URL-safe Base64 encoding.
+ * Also persists state to localStorage for recovery when URL is lost.
  *
- * Single Responsibility: serialization/deserialization of state to URL.
+ * Single Responsibility: serialization/deserialization of state to URL and localStorage.
  * Dependency Inversion: depends on the IUrlStateManager abstraction.
  */
 export class UrlStateManager implements IUrlStateManager {
+  private readonly STORAGE_KEY = 'visual-csp-editor-state';
+
   /**
-   * Compress and save the current editor state to the URL hash.
+   * Compress and save the current editor state to the URL hash and localStorage.
    */
   save(state: EditorState): void {
     const cspText = this.buildCspText(state);
 
     if (!cspText && !state.projectName && !state.projectUrl) {
       window.history.replaceState(null, '', window.location.pathname);
+      localStorage.removeItem(this.STORAGE_KEY);
       return;
     }
 
@@ -39,15 +43,49 @@ export class UrlStateManager implements IUrlStateManager {
       .replace(/=+$/, '');
 
     window.history.replaceState(null, '', '#' + base64);
+    
+    // Save to localStorage for persistence
+    try {
+      localStorage.setItem(this.STORAGE_KEY, json);
+    } catch (e) {
+      console.warn('Could not save to localStorage:', e);
+    }
   }
 
   /**
-   * Load editor state from the URL hash, decompressing and parsing it.
+   * Load editor state from the URL hash (priority) or localStorage (fallback).
    * Returns null if no valid state is found.
    */
   load(): EditorState | null {
     const hash = window.location.hash.substring(1);
-    if (!hash) return null;
+    
+    // Priority 1: Load from URL hash if present
+    if (hash) {
+      const urlState = this.loadFromUrl(hash);
+      if (urlState) {
+        // Update localStorage with the URL state
+        try {
+          const payload: StatePayload = {
+            n: urlState.projectName,
+            u: urlState.projectUrl,
+            c: urlState.rawCsp,
+          };
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(payload));
+        } catch (e) {
+          console.warn('Could not save to localStorage:', e);
+        }
+        return urlState;
+      }
+    }
+    
+    // Priority 2: Load from localStorage if no URL hash
+    return this.loadFromStorage();
+  }
+
+  /**
+   * Load editor state from URL hash.
+   */
+  private loadFromUrl(hash: string): EditorState | null {
 
     try {
       let str = hash.replace(/-/g, '+').replace(/_/g, '/');
@@ -86,6 +124,29 @@ export class UrlStateManager implements IUrlStateManager {
     } catch (e) {
       console.error('Invalid compressed URL state.', e);
       window.history.replaceState(null, '', window.location.pathname);
+      return null;
+    }
+  }
+
+  /**
+   * Load editor state from localStorage.
+   */
+  private loadFromStorage(): EditorState | null {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (!stored) return null;
+
+      const data: StatePayload = JSON.parse(stored);
+      
+      return {
+        directives: {},
+        projectName: data.n || '',
+        projectUrl: data.u || '',
+        rawCsp: data.c || '',
+      };
+    } catch (e) {
+      console.warn('Could not load from localStorage:', e);
+      localStorage.removeItem(this.STORAGE_KEY);
       return null;
     }
   }
