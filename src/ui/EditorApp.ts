@@ -66,6 +66,9 @@ export class EditorApp {
       draggedDirective: null as string | null,
       dragOverDirective: null as string | null,
       dragDirection: 'below' as 'above' | 'below',
+      showToast: false,
+      toastMessage: '',
+      toastIcon: 'success' as 'success' | 'error' | 'info',
 
       // Alpine lifecycle
       init() {
@@ -97,6 +100,15 @@ export class EditorApp {
 
       applyDarkMode() {
         document.documentElement.classList.toggle('dark', this.darkMode);
+      },
+
+      displayToast(message: string, icon: 'success' | 'error' | 'info' = 'success') {
+        this.toastMessage = message;
+        this.toastIcon = icon;
+        this.showToast = true;
+        setTimeout(() => {
+          this.showToast = false;
+        }, 3000);
       },
 
       // --- URL State ---
@@ -507,16 +519,14 @@ export class EditorApp {
       async copyToClipboard() {
         const success = await app.clipboard.copyText(this.generateCsp());
         if (success) {
-          this.copyText = 'Copied! ✓';
-          setTimeout(() => (this.copyText = 'Copy CSP Text'), 2000);
+          this.displayToast('Policy copied to clipboard!', 'success');
         }
       },
 
       async copyShareLink() {
         const success = await app.clipboard.copyText(window.location.href);
         if (success) {
-          this.shareText = 'Link Copied! 🔗';
-          setTimeout(() => (this.shareText = 'Copy Shareable Link'), 2000);
+          this.displayToast('Link copied to clipboard!', 'success');
         }
       },
 
