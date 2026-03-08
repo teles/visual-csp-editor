@@ -480,4 +480,149 @@ describe('EditorApp', () => {
     
     expect(color).toBe('text-red-400');
   });
+
+  it('should have toast state properties initialized', () => {
+    const data = app.createAlpineData();
+    
+    expect(data.showToast).toBe(false);
+    expect(data.toastMessage).toBe('');
+    expect(data.toastIcon).toBe('success');
+  });
+
+  it('should display toast with message and icon', () => {
+    vi.useFakeTimers();
+    const data = app.createAlpineData();
+    
+    data.displayToast('Test message', 'success');
+    
+    expect(data.showToast).toBe(true);
+    expect(data.toastMessage).toBe('Test message');
+    expect(data.toastIcon).toBe('success');
+    
+    vi.advanceTimersByTime(3000);
+    
+    expect(data.showToast).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('should display toast with default success icon', () => {
+    vi.useFakeTimers();
+    const data = app.createAlpineData();
+    
+    data.displayToast('Default icon test');
+    
+    expect(data.showToast).toBe(true);
+    expect(data.toastMessage).toBe('Default icon test');
+    expect(data.toastIcon).toBe('success');
+    
+    vi.advanceTimersByTime(3000);
+    expect(data.showToast).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('should display error toast', () => {
+    vi.useFakeTimers();
+    const data = app.createAlpineData();
+    
+    data.displayToast('Error message', 'error');
+    
+    expect(data.showToast).toBe(true);
+    expect(data.toastMessage).toBe('Error message');
+    expect(data.toastIcon).toBe('error');
+    
+    vi.advanceTimersByTime(3000);
+    expect(data.showToast).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('should display info toast', () => {
+    vi.useFakeTimers();
+    const data = app.createAlpineData();
+    
+    data.displayToast('Info message', 'info');
+    
+    expect(data.showToast).toBe(true);
+    expect(data.toastMessage).toBe('Info message');
+    expect(data.toastIcon).toBe('info');
+    
+    vi.advanceTimersByTime(3000);
+    expect(data.showToast).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it('should display toast when copying CSP to clipboard', async () => {
+    const data = app.createAlpineData();
+    data.directives = { 'default-src': ["'self'"] };
+    
+    const displayToastSpy = vi.spyOn(data, 'displayToast');
+    
+    await data.copyToClipboard();
+    
+    expect(mockClipboard.copyText).toHaveBeenCalled();
+    expect(displayToastSpy).toHaveBeenCalledWith('Policy copied to clipboard!', 'success');
+  });
+
+  it('should not display toast when copying fails', async () => {
+    const failClipboard = createMockClipboard();
+    vi.mocked(failClipboard.copyText).mockResolvedValue(false);
+    
+    const failApp = new EditorApp(
+      mockParser,
+      mockGenerator,
+      mockEvaluator,
+      mockUrlState,
+      failClipboard,
+      mockColorizer,
+      mockValidator,
+      mockTemplateService,
+      mockReportExporter,
+      mockCspExporter
+    );
+    const data = failApp.createAlpineData();
+    data.directives = { 'default-src': ["'self'"] };
+    
+    const displayToastSpy = vi.spyOn(data, 'displayToast');
+    
+    await data.copyToClipboard();
+    
+    expect(failClipboard.copyText).toHaveBeenCalled();
+    expect(displayToastSpy).not.toHaveBeenCalled();
+  });
+
+  it('should display toast when copying share link', async () => {
+    const data = app.createAlpineData();
+    
+    const displayToastSpy = vi.spyOn(data, 'displayToast');
+    
+    await data.copyShareLink();
+    
+    expect(mockClipboard.copyText).toHaveBeenCalledWith(window.location.href);
+    expect(displayToastSpy).toHaveBeenCalledWith('Link copied to clipboard!', 'success');
+  });
+
+  it('should not display toast when copying share link fails', async () => {
+    const failClipboard = createMockClipboard();
+    vi.mocked(failClipboard.copyText).mockResolvedValue(false);
+    
+    const failApp = new EditorApp(
+      mockParser,
+      mockGenerator,
+      mockEvaluator,
+      mockUrlState,
+      failClipboard,
+      mockColorizer,
+      mockValidator,
+      mockTemplateService,
+      mockReportExporter,
+      mockCspExporter
+    );
+    const data = failApp.createAlpineData();
+    
+    const displayToastSpy = vi.spyOn(data, 'displayToast');
+    
+    await data.copyShareLink();
+    
+    expect(failClipboard.copyText).toHaveBeenCalled();
+    expect(displayToastSpy).not.toHaveBeenCalled();
+  });
 });
